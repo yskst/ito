@@ -47,6 +47,8 @@ def main(argv):
         # とりあえずキューを満たす
         for i in range(w_nsample):
             data = next(f).strip()
+            if data[0] == '#':
+                continue
             w.push(data)
 
         try:
@@ -54,6 +56,8 @@ def main(argv):
                 print(' '.join(w.get_queue()))
                 for i in range(w_nshift):
                     data = next(f).strip()
+                    if data[0] == '#':
+                        continue
                     w.push(data)
         except StopIteration:
             # 入力がEOFに達したら終了
