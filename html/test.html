@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>サンプルコード</title>
+</head>
+<body>
+<canvas id="wave_canvas" width="1500" height="256"  style="border:1px solid #000000;"></canvas>
+<canvas id="spectrum_canvas" width="1500" height="256" style="border:1px solid #000000;"></canvas>
+<script>
+    var wave_canvas = document.querySelector('#wave_canvas');
+    var wave_ctx = wave_canvas.getContext("2d");
+
+    var spectrum_canvas = document.querySelector("#spectrum_canvas");
+    var spectrum_ctx = spectrum_canvas.getContext("2d");
+    spectrum_ctx.font = "10px serif";
+
+    var audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+
+    var soundDataBuffer = [];
+
+    //FFT
+    var analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;    //取得するデータのサイズ(配列の大きさ)を決める
+
+    //audioのみtrue
+    navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false
+    }).then(successFunc).catch(errorFunc);
+
+    
+    function successFunc(stream) {
+        var src = audioCtx.createMediaStreamSource(stream);
+
+        //マイクから集音した音をFFTに入れる
+        src.connect(analyser);
+        //analyser.connect(audioCtx.destination);
+        
+        setInterval(draw, 100);
+        draw();
+    }
+
+    function draw() {
+        draw_spectrum();
+        draw_wave();
+    }
+
+    //取得した周波数データを描写する
+    function draw_spectrum() {
+        var fsperbar = audioCtx.sampleRate / analyser.fftSize;
+        var bufLen = analyser.frequencyBinCount;
+        var data = new Uint8Array(bufLen);
+        analyser.getByteFrequencyData(data);
+
+        /** 描写 **/
+        spectrum_ctx.fillStyle = 'rgb(200, 200, 200)';
+        spectrum_ctx.fillRect(0, 0, spectrum_canvas.width, spectrum_canvas.height);
+
+        spectrum_ctx.lineWidth = 2;
+        spectrum_ctx.strokeStyle = 'rgb(100, 100, 100)';
+        spectrum_ctx.beginPath();
+
+        var sliceWidth = spectrum_canvas.width * 1.0 / bufLen;
+        var x = 0;
+
+        for (var i = 0; i < bufLen; i++) {
+
+           var v = data[i] / 256.0;
+            var y = (1-v) * spectrum_canvas.height;
+
+            if (i === 0) {
+                spectrum_ctx.moveTo(x, y);
+            } else {
+                spectrum_ctx.lineTo(x, y);
+            }
+ 
+            if(i % 50 === 0) {
+                fs = i * fsperbar;
+                spectrum_ctx.fillStyle="black"
+                spectrum_ctx.fillText(fs + "Hz", x, spectrum_canvas.height);
+            }
+            
+
+            x += sliceWidth;
+        }
+
+        //spectrum_ctx.lineTo(spectrum_canvas.width, spectrum_canvas.height / 2);
+        spectrum_ctx.stroke();
+    }
+
+    function draw_wave() {
+        var bufLen = analyser.frequencyBinCount;
+        var data = new Uint8Array(bufLen);
+        analyser.getByteTimeDomainData(data);
+        Array.prototype.push.apply(soundDataBuffer, data);
+        if(soundDataBuffer.length > wave_canvas.width) {
+            soundDataBuffer.splice(0, soundDataBuffer.length - wave_canvas.width);
+        }
+
+        wave_ctx.fillStyle = 'rgb(200, 200, 200)';
+        wave_ctx.fillRect(0, 0, wave_canvas.width, wave_canvas.height);
+
+        wave_ctx.lineWidth = 2;
+        wave_ctx.strokeStyle = 'rgb(100, 100, 100)';
+        wave_ctx.beginPath();
+        
+        var x = 0;
+        for(let i in soundDataBuffer) {
+            let y = soundDataBuffer[i]; 
+            if(i === 0) {
+               wave_ctx.moveTo(x, y); 
+            } else {
+               wave_ctx.lineTo(x, y);
+            }
+            x++;
+        }
+        wave_ctx.stroke();
+    }
+
+    // Web Audio APIが使えなかった時
+    function errorFunc(error) {
+        alert("error");
+    }
+
+</script>
+</body>
+</html>
