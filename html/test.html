@@ -5,6 +5,9 @@
     <title>サンプルコード</title>
 </head>
 <body>
+<div class="controlPanel">
+    <button id='start_stop_button' onClick='start_or_stop()'>start</button>
+</div>
 <canvas id="wave_canvas" width="1500" height="256"  style="border:1px solid #000000;"></canvas>
 <canvas id="spectrum_canvas" width="1500" height="256" style="border:1px solid #000000;"></canvas>
 <script>
@@ -15,23 +18,50 @@
     var spectrum_ctx = spectrum_canvas.getContext("2d");
     spectrum_ctx.font = "10px serif";
 
-    var audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+    var audioCtx = null;
+    var analyser = null;
+    var soundDataBuffer = null;
 
-    var soundDataBuffer = [];
+    function start_or_stop() {
+        let text = document.getElementById("start_stop_button").innerHTML;
+        if(text === 'start') {
+            if(audioCtx === null) init_audioCtx();
+            else {
+                var agent = window.navigator.userAgent.toLowerCase();
+                var chrome = (agent.indexOf('chrome') !== -1) && (agent.indexOf('edge') === -1) 
+                if(chrome){
+                    audioCtx.close();
+                    init_audioCtx();
+                } else {
+                    audioCtx.resume();
+                }
+            }
+            document.getElementById("start_stop_button").innerHTML = 'stop';
+        } else {
+            if(audioCtx !== null) audioCtx.suspend();
+            document.getElementById("start_stop_button").innerHTML = 'start';
+        }
+    }   
 
-    //FFT
-    var analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 512;    //取得するデータのサイズ(配列の大きさ)を決める
-
-    //audioのみtrue
-    navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false
-    }).then(successFunc).catch(errorFunc);
-
+    //init_audioCtx();
+    function init_audioCtx() {
+         audioCtx = new(window.AudioContext || window.webkitAudioContext)();
     
+        soundDataBuffer = [];
+    
+        //FFT
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;    //取得するデータのサイズ(配列の大きさ)を決める
+    
+        //audioのみtrue
+        navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: false
+        }).then(successFunc).catch(errorFunc);
+    }
+   
     function successFunc(stream) {
-        var src = audioCtx.createMediaStreamSource(stream);
+        let src = audioCtx.createMediaStreamSource(stream);
 
         //マイクから集音した音をFFTに入れる
         src.connect(analyser);
@@ -121,6 +151,7 @@
     // Web Audio APIが使えなかった時
     function errorFunc(error) {
         alert("error");
+        console.log(error);
     }
 
 </script>
