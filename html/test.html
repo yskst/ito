@@ -10,6 +10,8 @@
 </div>
 <canvas id="wave_canvas" width="1500" height="256"  style="border:1px solid #000000;"></canvas>
 <canvas id="spectrum_canvas" width="1500" height="256" style="border:1px solid #000000;"></canvas>
+<textarea id="stats_text" style="width:100%;height:90px" readonly="true"></textarea>
+<input id="power_text" type="text" readonly="true">
 <script>
     var wave_canvas = document.querySelector('#wave_canvas');
     var wave_ctx = wave_canvas.getContext("2d");
@@ -17,6 +19,9 @@
     var spectrum_canvas = document.querySelector("#spectrum_canvas");
     var spectrum_ctx = spectrum_canvas.getContext("2d");
     spectrum_ctx.font = "10px serif";
+
+    var stats_textarea = document.querySelector("#stats_text");
+    var power_text = document.querySelector("#power_text");
 
     var audioCtx = null;
     var analyser = null;
@@ -40,9 +45,9 @@
             }
 
             ndata = 0;
-            sum = new Array(FFTSIZE);
-            sqsum = new Array(FFTSIZE)
-            for (let i = 0; i < FFTSIZE; i++) {
+            sum = new Array(FFTSIZE/2);
+            sqsum = new Array(FFTSIZE/2)
+            for (let i = 0; i < FFTSIZE/2; i++) {
                 sum[i] = 0.0;
                 sqsum[i] = 0.0;
             }
@@ -52,12 +57,11 @@
             if(audioCtx !== null) audioCtx.suspend();
             document.getElementById("start_stop_button").innerHTML = 'start';
             let res = {mean: [], variance: []};
-            for (let i = 0; i < FFTSIZE; i++) {
+            for (let i = 0; i < FFTSIZE/2; i++) {
                 res.mean[i] = sum[i] / ndata;
                 res.variance[i] = sqsum[i] / ndata - (res.mean[i] * res.mean[i]);
             }
-            // TODO: show result
-            console.log(res);
+            stats_textarea.value = JSON.stringify(res);
         }
     }   
 
@@ -111,8 +115,10 @@
 
         var sliceWidth = spectrum_canvas.width * 1.0 / bufLen;
         var x = 0;
+        let c0 = 0.0;
 
         for (var i = 0; i < bufLen; i++) {
+           c0 += data[i];
            sum[i] += data[i];
            sqsum[i] += data[i]*data[i];
            ndata++;
@@ -132,7 +138,7 @@
                 spectrum_ctx.fillText(fs + "Hz", x, spectrum_canvas.height);
             }
             
-
+            power_text.value = c0;
             x += sliceWidth;
         }
 
