@@ -68,6 +68,7 @@
     //init_audioCtx();
     function init_audioCtx() {
          audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+        console.log("rate" + audioCtx.sampleRate);
     
         soundDataBuffer = [];
     
