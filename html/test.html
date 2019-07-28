@@ -75,6 +75,7 @@
         //FFT
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = FFTSIZE;    //取得するデータのサイズ(配列の大きさ)を決める
+        analyser.smoothingTimeConstant = 0;
     
         //audioのみtrue
         navigator.mediaDevices.getUserMedia({
